@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { Subscription } from 'rxjs';
+import { fromEvent, map, merge, of, Subscription } from 'rxjs';
 import { ToastService } from './services/toast.service';
 import { Constants } from './shared/utils/constants';
 
@@ -15,7 +15,8 @@ export class AppComponent implements OnInit, OnDestroy {
   toastSubscription: Subscription;
   showSideBar = false;
   showBreadCrumb = false;
-
+  networkStatus: boolean = false;
+  networkStatus$: Subscription = Subscription.EMPTY;
   constructor(
     private router: Router,
     private activatedRoute: ActivatedRoute,
@@ -35,6 +36,21 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     });
+    this.checkNetworkStatus();
+  }
+
+  checkNetworkStatus() {
+    this.networkStatus = navigator.onLine;
+    this.networkStatus$ = merge(
+      of(null),
+      fromEvent(window, 'online'),
+      fromEvent(window, 'offline')
+    )
+      .pipe(map(() => navigator.onLine))
+      .subscribe(status => {
+        console.log('status', status);
+        this.networkStatus = status;
+      });
   }
 
   private watchForToast() {
@@ -77,5 +93,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.toastSubscription.unsubscribe();
+    this.networkStatus$.unsubscribe();
   }
 }
